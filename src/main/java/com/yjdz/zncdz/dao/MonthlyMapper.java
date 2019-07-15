@@ -3,7 +3,13 @@ package com.yjdz.zncdz.dao;
 import com.yjdz.zncdz.entity.Monthly;
 import com.yjdz.zncdz.entity.MonthlyExample;
 import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Repository;
+
+@Mapper
+@Repository
 
 public interface MonthlyMapper {
     /**
