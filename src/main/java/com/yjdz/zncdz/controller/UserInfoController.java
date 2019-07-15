@@ -6,6 +6,7 @@ import com.yjdz.zncdz.comm.AppConfig;
 import com.yjdz.zncdz.comm.HttpComm;
 import com.yjdz.zncdz.dao.EquipmentinfoMapper;
 import com.yjdz.zncdz.dao.HostinfoMapper;
+import com.yjdz.zncdz.dao.UserinfoMapper;
 import com.yjdz.zncdz.entity.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Base64;
