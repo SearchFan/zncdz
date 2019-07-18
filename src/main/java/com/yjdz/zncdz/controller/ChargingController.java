@@ -219,4 +219,115 @@ public class ChargingController {
         call.put("message", "设备未开始充电");
         return call;
     }
+    
+    @PostMapping(value="stopCharging")
+    @ResponseBody
+    public Map<String, Object> stopCharging(@RequestBody Map<String, String> param){
+        Map<String, Object> call = new HashMap<>();
+
+        String id = param.get("orderId");
+        if(id==null || "".equals(id)){
+            call.put("status",0);
+            call.put("msg","该订单不存在");
+            return call;
+        }
+
+        Integer _id = Integer.valueOf(id);
+
+        Orderinfo orderinfo = orderinfoMapper.selectByPrimaryKey(_id);
+        Byte status = orderinfo.getStatus();
+        String equipId = orderinfo.getEquipmentid();
+        Byte port = orderinfo.getPort();
+        Integer userId = orderinfo.getUserid();
+        Integer hour = orderinfo.getSelectchargingtime();
+        if(userId == null){
+            call.put("status",0);
+            call.put("msg","该订单所属用户不存在");
+            return call;
+        }
+        System.out.println("equipId="+equipId+" port="+port);
+        if(equipId==null || "".equals(equipId) || port==null || "".equals(port)){
+            call.put("status",0);
+            call.put("msg","该设备端口不存在");
+            return call;
+        }
+
+        EquipmentinfoExample equipmentinfoExample = new EquipmentinfoExample();
+        equipmentinfoExample.createCriteria().andPortEqualTo(port).andEquipidEqualTo(equipId);
+
+        List<Equipmentinfo> equipmentinfoList = equipmentinfoMapper.selectByExample(equipmentinfoExample);
+
+        if(equipmentinfoList.size()==0){
+            call.put("status",0);
+            call.put("msg","该设备不存在");
+            return call;
+        }
+
+        Equipmentinfo equipmentinfo = equipmentinfoList.get(0);
+        String portstatus = equipmentinfo.getPortstatus();
+
+//        if(!portstatus.equals("01")){
+//            call.put("status",0);
+//            call.put("msg","该设备并未在充电状态");
+//            return call;
+//        }
+
+        Integer hostId = equipmentinfo.getHostid();
+        if(hostId == null){
+            call.put("status",0);
+            call.put("msg","该设备的主机不存在");
+            return call;
+        }
+        Hostinfo hostinfo = hostinfoMapper.selectByPrimaryKey(hostId);
+        if(hostinfo == null){
+            call.put("status",0);
+            call.put("msg","该设备的主机不存在");
+            return call;
+        }
+        String imel = hostinfo.getImelid();
+        SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMddHHmmss");
+        String date = sdf.format(new Date());
+        switch(status){
+            case 0:
+                orderinfo.setEndtime(new Date());
+                orderinfo.setStatus((byte)3);
+                orderinfo.setLastlandingtime(new Date());
+                orderinfo.setConsumption(new BigDecimal(0));
+                orderinfo.setIsfinished(true);
+                int i = orderinfoMapper.updateByPrimaryKey(orderinfo);
+                if(i > 0){
+                    call.put("status",1);
+                    call.put("msg","订单已被取消");
+                }else{
+                    call.put("status",0);
+                    call.put("msg","订单取消失败");
+                }
+                break;
+            case 1:
+            case 3:
+                String topic = "area/public/" + imel;
+                String message = "";
+                switch (port){
+                    case 1:
+                        message = "{82"+equipId+"|"+userId+"|85|00|"+hour+"|"+date+"|01|}";
+                        break;
+                    case 2:
+                        message = "{82"+equipId+"|"+userId+"|00|85|"+hour+"|"+date+"|02|}";
+                        break;
+                    default:
+                        break;
+                }
+                MqttComm.getPublish(topic, message);
+                call.put("status",1);
+                call.put("msg","结束充电指令发送成功!");
+                System.out.println(message);
+                return call;
+            default:
+                call.put("status",0);
+                call.put("msg","该订单已被处理");
+                return call;
+        }
+
+        return call;
+    }
 }
