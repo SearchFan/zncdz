@@ -1,0 +1,100 @@
+package com.yjdz.zncdz.controller;
+
+import com.yjdz.zncdz.dao.AccountinfoMapper;
+import com.yjdz.zncdz.dao.CardinfoMapper;
+import com.yjdz.zncdz.entity.Accountinfo;
+import com.yjdz.zncdz.entity.AccountinfoExample;
+import com.yjdz.zncdz.entity.Cardinfo;
+import com.yjdz.zncdz.entity.CardinfoExample;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Controller
+@RequestMapping(value="card")
+public class CardinfoController {
+
+    @Autowired
+    CardinfoMapper cardinfoMapper;
+
+    @Autowired
+    AccountinfoMapper accountinfoMapper;
+
+    @PostMapping(value="searchCard")
+    @ResponseBody
+    public Map<String,Object> searchCard(@RequestBody Map<String,String> param){
+        Map<String,Object> call = new HashMap<>();
+
+        String id = param.get("userid");
+        if(id == null || "".equals(id)){
+            call.put("status",0);
+            call.put("msg","参数错误");
+            call.put("data","");
+            return call;
+        }
+
+        Integer _id = Integer.valueOf(id);
+
+        AccountinfoExample accountinfoExample = new AccountinfoExample();
+        accountinfoExample.createCriteria().andUseridEqualTo(_id);
+
+        List<Accountinfo> accountinfoList = accountinfoMapper.selectByExample(accountinfoExample);
+
+        if(accountinfoList.size() == 0){
+            call.put("status",0);
+            call.put("msg","用户还未创建钱包");
+            call.put("data","");
+            return call;
+        }
+
+        Integer account_id = accountinfoList.get(0).getId();
+
+        CardinfoExample cardinfoExample = new CardinfoExample();
+        cardinfoExample.createCriteria().andAccountidEqualTo(account_id);
+
+        List<Cardinfo> cardinfoList = cardinfoMapper.selectByExample(cardinfoExample);
+
+        if(cardinfoList.size()==0){
+            call.put("status",0);
+            call.put("msg","用户还未创建卡片");
+            call.put("data","");
+            return call;
+        }
+        call.put("status",1);
+        call.put("msg","success");
+        call.put("data",cardinfoList);
+
+        return call;
+    }
+
+    @PostMapping(value="searchCardDetail")
+    @ResponseBody
+    public Map<String,Object> searchCardDetail(@RequestBody Map<String,String> param){
+        Map<String,Object> call = new HashMap<>();
+
+        String id = param.get("id");
+
+        if(id==null || "".equals(id)){
+            call.put("status",0);
+            call.put("msg","参数错误");
+            return call;
+        }
+
+        Integer _id = Integer.valueOf(id);
+
+        Cardinfo cardinfo = cardinfoMapper.selectByPrimaryKey(_id);
+
+        call.put("status",1);
+        call.put("mag","success");
+        call.put("data",cardinfo);
+
+        return call;
+    }
+}
